@@ -1,0 +1,54 @@
+<svg width="100%" viewBox="0 0 680 640" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>secha-ingestion data flow</title>
+<desc>Top-to-bottom flow: a command starts the CLI and config, the runner orchestrates, the MX Electrix connector fetches raw JSON from the external API, the raw payload is fingerprinted and labelled by the sink, then written verbatim to the landing zone. A separate transformation engine later reads it.</desc>
+<style>
+  text { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .t  { font-size: 14px; font-weight: 600; fill: #1b1b19; }
+  .ts { font-size: 12px; font-weight: 400; fill: #5f5e5a; }
+  .c-blue rect { fill: #e6f1fb; stroke: #378add; }
+  .c-gray rect { fill: #f1efe8; stroke: #888780; }
+  rect.c-blue { fill: #e6f1fb; stroke: #378add; }
+  rect.c-gray { fill: #f1efe8; stroke: #888780; }
+  .arr { stroke: #6b6b66; stroke-width: 1.5; fill: none; }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9" fill="none" stroke="#6b6b66" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<g class="c-blue"><rect x="60" y="40" width="270" height="44" rx="6" stroke-width="0.5"/><text class="t" x="195" y="60" text-anchor="middle">Run the command</text><text class="ts" x="195" y="77" text-anchor="middle">secha-ingest mx-electrix</text></g>
+
+<g class="c-blue"><rect x="60" y="104" width="270" height="46" rx="6" stroke-width="0.5"/><text class="t" x="195" y="125" text-anchor="middle">CLI + config</text><text class="ts" x="195" y="142" text-anchor="middle">reads settings and secrets</text></g>
+
+<g class="c-blue"><rect x="60" y="172" width="270" height="46" rx="6" stroke-width="0.5"/><text class="t" x="195" y="193" text-anchor="middle">Runner</text><text class="ts" x="195" y="210" text-anchor="middle">orchestrates the run</text></g>
+
+<g class="c-blue"><rect x="60" y="240" width="270" height="46" rx="6" stroke-width="0.5"/><text class="t" x="195" y="261" text-anchor="middle">MX Electrix connector</text><text class="ts" x="195" y="278" text-anchor="middle">the vendor worker</text></g>
+
+<g class="c-gray"><rect x="410" y="240" width="210" height="46" rx="6" stroke-width="0.5"/><text class="t" x="515" y="261" text-anchor="middle">MX Electrix API</text><text class="ts" x="515" y="278" text-anchor="middle">external source</text></g>
+
+<g class="c-blue"><rect x="60" y="308" width="270" height="46" rx="6" stroke-width="0.5"/><text class="t" x="195" y="329" text-anchor="middle">Raw payload</text><text class="ts" x="195" y="346" text-anchor="middle">exact bytes, untouched</text></g>
+
+<g class="c-blue"><rect x="60" y="376" width="270" height="46" rx="6" stroke-width="0.5"/><text class="t" x="195" y="397" text-anchor="middle">Sink</text><text class="ts" x="195" y="414" text-anchor="middle">hash, envelope, dedupe</text></g>
+
+<g class="c-blue"><rect x="60" y="444" width="270" height="46" rx="6" stroke-width="0.5"/><text class="t" x="195" y="465" text-anchor="middle">Landing zone</text><text class="ts" x="195" y="482" text-anchor="middle">raw .json + .meta.json</text></g>
+
+<g class="c-gray"><rect x="60" y="520" width="270" height="46" rx="6" stroke-width="1" style="stroke-dasharray:5 3"/><text class="t" x="195" y="541" text-anchor="middle">Transformation engine</text><text class="ts" x="195" y="558" text-anchor="middle">separate project</text></g>
+
+<line class="arr" x1="195" y1="84" x2="195" y2="104" marker-end="url(#arrow)"/>
+<line class="arr" x1="195" y1="150" x2="195" y2="172" marker-end="url(#arrow)"/>
+<line class="arr" x1="195" y1="218" x2="195" y2="240" marker-end="url(#arrow)"/>
+<line class="arr" x1="195" y1="286" x2="195" y2="308" marker-end="url(#arrow)"/>
+<text class="ts" x="205" y="301" text-anchor="start">wrap bytes verbatim</text>
+<line class="arr" x1="195" y1="354" x2="195" y2="376" marker-end="url(#arrow)"/>
+<line class="arr" x1="195" y1="422" x2="195" y2="444" marker-end="url(#arrow)"/>
+<text class="ts" x="205" y="437" text-anchor="start">write to shelf</text>
+<line class="arr" x1="195" y1="490" x2="195" y2="520" marker-end="url(#arrow)" style="stroke-dasharray:5 3"/>
+<text class="ts" x="205" y="509" text-anchor="start">later, on demand</text>
+
+<line class="arr" x1="330" y1="256" x2="410" y2="256" marker-end="url(#arrow)"/>
+<text class="ts" x="370" y="250" text-anchor="middle">fetch (httpx)</text>
+<line class="arr" x1="410" y1="272" x2="330" y2="272" marker-end="url(#arrow)"/>
+<text class="ts" x="370" y="287" text-anchor="middle">raw JSON</text>
+
+<rect class="c-blue" x="60" y="592" width="14" height="14" rx="3" stroke-width="0.5"/>
+<text class="ts" x="80" y="603" text-anchor="start">secha-ingestion (this project)</text>
+<rect class="c-gray" x="330" y="592" width="14" height="14" rx="3" stroke-width="0.5"/>
+<text class="ts" x="350" y="603" text-anchor="start">external / out of scope</text>
+</svg>
