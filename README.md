@@ -41,7 +41,7 @@ A new vendor is a new file in `connectors/` + a CLI command — **zero changes t
 
 ## Design decisions (the load-bearing ones)
 - **Deterministic, no transformation in ingestion.** Scaling, timestamp normalisation, and field
-  selection are deliberately the transform engine's job (the legacy CSV pipeline baked them in; we don't).
+  selection are deliberately the transform engine's job.
 - **Raw, immutable landing storing bytes verbatim.** Higher fidelity than the legacy CSV, with full
   auditability and replayability.
 - **Vendor-blind core + per-vendor connectors, abstraction deferred.** The `SourceConnector` interface
