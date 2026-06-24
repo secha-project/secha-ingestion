@@ -126,4 +126,4 @@ All four run in CI on every push (`.github/workflows/ci.yml`).
 - **Open questions (data platform):** see [docs/open-questions.md](docs/open-questions.md) —
   the blocking ones concern pagination, the `fields` parameter, and timestamp/timezone semantics.
 - **`SourceConnector` interface** will be refactored when the Kempower connector lands.
-- **License:** TBD — confirm with the SECHA project / supervisor before any public release.
+- **License:** TBD.
