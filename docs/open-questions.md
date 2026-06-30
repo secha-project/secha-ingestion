@@ -1,29 +1,29 @@
-# Open questions — for (SECHA data platform)
+# Open questions — SECHA data platform (MX Electrix slice)
 
-Ingestion-scoped clarifications. The first three are **blocking** for trusting the raw we land; the rest
-are operational. (A broader list spanning transform/next-vendors is tracked at the project level.)
+Updated after the meeting. Sources: the eQL DBAPI **v2 Swagger** (`MX Electrix API endpoints`) and from `data-platform-documentation`.
 
-## Blocking — affect whether the landed raw is complete and correctly interpretable
-1. **Pagination.** Does `/api/v2/measurements/` (or any endpoint) ever paginate or cap rows for a full
-   day? Our fetcher assumes one request returns the whole day — if it pages, we silently lose data.
-2. **`fields` parameter.** If we omit `fields`, does the API return *all* available measurements? Is
-   there a definitive full field list? We want a faithful raw payload (the engine selects later), not the
-   legacy curated whitelist.
-3. **Timestamps & timezone.** Are measurement timestamps UTC (the raw has no `Z`), and are the
-   `start`/`end` query params interpreted as UTC or Helsinki local? A local/DST interpretation would fetch
-   the wrong day and mislabel every reading.
+## Resolved
+1. **Pagination** — ✅ No pagination. The Swagger defines no `page`/`limit`/`offset`/cursor on any
+   endpoint, so one request returns the whole day. Our single-request-per-day assumption is correct.
+2. **`fields` parameter** — ✅ Optional. Omitting it returns the full `Measurement` object (all fields);
+   `fields` only *narrows* the selection. So leaving `SECHA_ELECTRIX_FIELDS` unset lands everything — correct.
+3. **Timestamps & timezone** — ✅ Timestamps are **UTC**; the engine attaching UTC is correct.
+4. **Scaling (uk/ik)** — ✅ Scale per device: multiply voltages by `uk`, currents by `ik`, powers by
+   `uk·ik`. Raw JSON is unscaled; scaling is the transform engine's job (config rule). Direction confirmed.
+5. **Energy units** — ✅ Values are **kWh / kvarh** (cumulative) even though attribute names end in
+   `wh`/`varh` — confirmed by comparing `pw` vs `ep10wh`. Canonical units updated accordingly.
+6. **Auth** — ✅ `Api-Key <key>` in the `Authorization` header (Swagger `securityDefinitions`). Matches our connector.
+7. **Procem source (next vendor)** — ✅ Tab-delimited `…_part_*.csv` (daily 7-Zip → extracted → split).
+   Raw lives on the TUNI group drive / SSH `rd-file-transfer.tuni.fi` (`procem_81404_server`), not an API.
+8. **Events form** — ✅ `/events/{id}/` `map_variable_names` defaults to **false**. Store the default
+   (false) form as the faithful raw; the name mapping depends on per-meter settings and is a transform concern.
 
-## Vendor facts to confirm (interpretation, used by the transform engine)
-4. **Scaling.** We read in the electrix-api code that raw JSON values are *unscaled* and the CSV
-   multiplies voltages by `uk`, currents by `ik`, powers by `uk·ik`. Confirm raw is unscaled, multiply is
-   correct, and what `ik`/`uk` physically are (CT/VT ratios?) and that they are static per device.
-5. **Energy units.** Counter columns end in `wh`/`varh` but the spec lists kWh/kvarh — which is correct?
-
-## Operational
-6. **Revisions/late data.** Does the API ever revise past values (re-fetching an old day returns
-   different numbers)? Determines whether to expect multiple landed snapshots per day.
-7. **Access.** Is the host URL/port stable, and reachable only from the TUNI network/VPN?
-8. **Token & TLS.** Token lifetime/rotation and renewal; rate limits; is the endpoint self-signed
-   (needs `allow-invalid-certs`) or is there a proper certificate to verify?
-9. **Meter inventory.** Are meters 21/22 the ABC-station and Plugit-charger meters? Are IDs stable, and
-   will planned relocation/new meters change or reuse IDs?
+## Still open / confirm later
+- **Data revisions / late arrivals.** The legacy transformer notes ProCem measurements near midnight can
+  land in the next day's file; whether the MX Electrix API revises past values is unconfirmed. (Our
+  immutable-snapshot design handles it either way.)
+- **Token lifetime / rotation & rate limits** — not explicitly specified.
+- **TLS** — the host is `https://213.186.239.132:25847` (IP); likely a self-signed cert, so
+  `SECHA_ELECTRIX_ALLOW_INVALID_CERTS=true` is probably required. Confirm / obtain a proper cert.
+- **Meter inventory** — confirm which meter id is the ABC-station vs the Plugit charger, and ID stability
+  across the planned relocation.
