@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date as date_type
 from typing import Annotated
 
 import typer
@@ -29,15 +30,29 @@ def mx_electrix(
 ) -> None:
     """Ingest raw MX Electrix /meters/ and /measurements/ for a date into the landing zone."""
     ingest_logging.configure()
+    try:
+        date_type.fromisoformat(date)
+    except ValueError as exc:
+        raise typer.BadParameter(f"--date must be YYYY-MM-DD, got {date!r}") from exc
+
     settings = Settings()
-    connector = MxElectrixConnector(
-        host_url=settings.electrix_host_url,
-        access_token=settings.electrix_access_token,
-        allow_invalid_certs=settings.electrix_allow_invalid_certs,
-        timeout_s=settings.request_timeout_s,
-        max_retries=settings.max_retries,
-        fields=settings.electrix_fields,
-    )
+    try:
+        connector = MxElectrixConnector(
+            host_url=settings.electrix_host_url,
+            access_token=settings.electrix_access_token,
+            allow_invalid_certs=settings.electrix_allow_invalid_certs,
+            timeout_s=settings.request_timeout_s,
+            max_retries=settings.max_retries,
+            fields=settings.electrix_fields,
+        )
+    except ValueError as exc:
+        typer.secho(
+            f"{exc} — set SECHA_ELECTRIX_HOST_URL and SECHA_ELECTRIX_ACCESS_TOKEN in .env "
+            "(see .env.template)",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1) from exc
     try:
         sink = RawSink(settings.landing_root)
         run_params = {"date": date} if meter is None else {"date": date, "meter": meter}

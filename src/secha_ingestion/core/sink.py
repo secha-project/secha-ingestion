@@ -7,6 +7,10 @@ Path scheme (Hive-partitioned, WORM):
 Identity = (vendor, source, partition.identity). The content SHA-256 only *detects change*:
 identical content is an idempotent skip; changed content lands as a new snapshot. Nothing is
 ever overwritten.
+
+Land protocol (atomic): payload bytes go to a `.tmp` name first, the envelope is written next,
+and the payload is renamed into place last. Invariant: if the payload path exists, the payload
+is complete and its envelope is present — a crash mid-write can never masquerade as landed.
 """
 
 from __future__ import annotations
@@ -99,9 +103,14 @@ class RawSink:
         )
 
         self._fs.makedirs(directory, exist_ok=True)
-        with self._fs.open(payload_path, "wb") as handle:
+        # Atomic land: tmp payload -> envelope -> rename payload into place last.
+        tmp_path = f"{payload_path}.tmp"
+        with self._fs.open(tmp_path, "wb") as handle:
             handle.write(payload.body)
-        with self._fs.open(envelope_path, "w") as handle:
-            handle.write(envelope.model_dump_json(indent=2))
+        with self._fs.open(envelope_path, "wb") as handle:
+            # explicit UTF-8 bytes: text mode would use the platform encoding (cp1252 on
+            # Windows) and mangle e.g. Finnish characters in identity or request params
+            handle.write(envelope.model_dump_json(indent=2).encode("utf-8"))
+        self._fs.mv(tmp_path, payload_path)
 
         return LandedResult(payload_path, envelope_path, sha, written=True)

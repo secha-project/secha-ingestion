@@ -79,3 +79,34 @@ def test_run_count_invariant_via_sink(landing: str) -> None:
     sink.land(part, payload, connector_name="mx_electrix", connector_version="0.1.0")
     again = sink.land(part, payload, connector_name="mx_electrix", connector_version="0.1.0")
     assert again.written is False
+
+
+def test_envelope_is_utf8_and_non_ascii_survives(landing: str) -> None:
+    """Finnish characters in identity/params must round-trip (no platform-encoding mangling)."""
+    sink = RawSink(landing)
+    part = SourcePartition("mx_electrix", "meters", {"site": "Lempäälä", "date": "2025-05-21"})
+    payload = RawPayload(
+        body=b"[]",
+        content_type="application/json",
+        request_params={"note": "Sähkötalo"},
+    )
+    result = sink.land(part, payload, connector_name="mx_electrix", connector_version="0.1.0")
+
+    meta = json.loads(Path(result.envelope_path).read_bytes().decode("utf-8"))
+    assert meta["partition"]["site"] == "Lempäälä"
+    assert meta["request_params"]["note"] == "Sähkötalo"
+
+
+def test_no_tmp_residue_after_land(landing: str) -> None:
+    """The atomic land protocol must leave no .tmp files behind."""
+    sink = RawSink(landing)
+    part = SourcePartition("mx_electrix", "measurements", {"meter": "21", "date": "2025-05-21"})
+    result = sink.land(
+        part,
+        RawPayload(b'{"a": 1}', "application/json"),
+        connector_name="mx_electrix",
+        connector_version="0.1.0",
+    )
+    assert Path(result.payload_path).exists()
+    directory = Path(result.payload_path).parent
+    assert not list(directory.glob("*.tmp"))

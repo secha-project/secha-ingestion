@@ -42,6 +42,9 @@ class MxElectrixConnector:
             raise ValueError("MxElectrixConnector requires host_url and access_token")
         self._fields = fields
         self._max_retries = max(1, max_retries)
+        # per-run cache: the device list is landed AND used for meter discovery — one
+        # fetch guarantees both see the same bytes (and saves an API call)
+        self._meters_cache: RawPayload | None = None
         self._client = httpx.Client(
             base_url=host_url.rstrip("/"),
             headers={
@@ -67,7 +70,7 @@ class MxElectrixConnector:
 
     def fetch(self, partition: SourcePartition) -> Iterator[tuple[SourcePartition, RawPayload]]:
         if partition.source == "meters":
-            yield partition, self._get(_METERS_PATH, {})
+            yield partition, self._meters_payload()
         elif partition.source == "measurements":
             date = partition.identity["date"]
             params: dict[str, str] = {
@@ -85,30 +88,49 @@ class MxElectrixConnector:
         self._client.close()
 
     # -- internals ------------------------------------------------------------------------------
+    def _meters_payload(self) -> RawPayload:
+        if self._meters_cache is None:
+            self._meters_cache = self._get(_METERS_PATH, {})
+        return self._meters_cache
+
     def _discover_meter_ids(self) -> list[str]:
-        payload = self._get(_METERS_PATH, {})
-        devices = json.loads(payload.body)
+        devices = json.loads(self._meters_payload().body)
         return [str(device["id"]) for device in devices]
 
     def _get(self, path: str, params: dict[str, str]) -> RawPayload:
+        """GET with retries for *transient* failures only.
+
+        4xx responses are client errors (the Swagger documents 404 as "incorrect meter id or
+        permission denied") — retrying cannot help, so they fail immediately with a clear
+        message. Transport errors and 5xx responses are retried with backoff.
+        """
         last_exc: Exception | None = None
         for attempt in range(self._max_retries):
             try:
                 response = self._client.get(path, params=params)
                 response.raise_for_status()
-            except httpx.HTTPError as exc:
+            except httpx.HTTPStatusError as exc:
+                status = exc.response.status_code
+                if status < 500:  # client error: not transient, do not retry
+                    raise RuntimeError(
+                        f"MX Electrix GET {path} failed with HTTP {status}: "
+                        f"{exc.response.text[:200]}"
+                    ) from exc
                 last_exc = exc
+            except httpx.HTTPError as exc:  # transport errors (timeout, connect, TLS)
+                last_exc = exc
+            else:
+                return RawPayload(
+                    body=response.content,  # verbatim bytes; never parsed/re-serialised
+                    content_type=response.headers.get("content-type", "application/json"),
+                    http_status=response.status_code,
+                    request_url=str(response.request.url),
+                    request_params=dict(params),
+                    source_version=SOURCE_API_VERSION,
+                    sensitivity="partner-confidential",
+                )
+            if attempt < self._max_retries - 1:
                 time.sleep(min(2**attempt, 8))
-                continue
-            return RawPayload(
-                body=response.content,  # verbatim bytes; never parsed/re-serialised
-                content_type=response.headers.get("content-type", "application/json"),
-                http_status=response.status_code,
-                request_url=str(response.request.url),
-                request_params=dict(params),
-                source_version=SOURCE_API_VERSION,
-                sensitivity="partner-confidential",
-            )
         raise RuntimeError(
             f"MX Electrix GET {path} failed after {self._max_retries} attempts: {last_exc}"
         )
