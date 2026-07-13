@@ -32,6 +32,6 @@ Updated after the meeting. Sources: the eQL DBAPI **v2 Swagger** (`MX Electrix A
   cert, so `SECHA_ELECTRIX_ALLOW_INVALID_CERTS=true` is probably required. Confirm / obtain a proper cert.
 - **Meter inventory:** confirm which meter id is the ABC station vs the Plugit charger, and ID
   stability across the planned relocation.
-- **ProCem 1 Hz semantics (for Ville):** are the per-second values instantaneous samples or 1-second
+- **ProCem 1 Hz semantics:** are the per-second values instantaneous samples or 1-second
   aggregates? Are values final engineering units (no scaling factors)? Also flag: the EVCharging
   feed stopped logging on 2026-06-28.
