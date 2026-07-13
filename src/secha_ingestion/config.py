@@ -19,3 +19,7 @@ class Settings(BaseSettings):
     electrix_access_token: str = ""
     electrix_allow_invalid_certs: bool = False
     electrix_fields: str | None = None  # None => request server default (all fields)
+
+    # --- ProCem file connector ---
+    procem_source_url: str = ""  # directory of YYYY-MM-DD_procem.7z archives (path or fsspec URL)
+    procem_ids: str | None = None  # rtl_id subset, e.g. "23501-23949"; None => whole day file

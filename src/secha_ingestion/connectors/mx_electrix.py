@@ -42,7 +42,7 @@ class MxElectrixConnector:
             raise ValueError("MxElectrixConnector requires host_url and access_token")
         self._fields = fields
         self._max_retries = max(1, max_retries)
-        # per-run cache: the device list is landed AND used for meter discovery — one
+        # per-run cache: the device list is landed AND used for meter discovery; one
         # fetch guarantees both see the same bytes (and saves an API call)
         self._meters_cache: RawPayload | None = None
         self._client = httpx.Client(
@@ -101,7 +101,7 @@ class MxElectrixConnector:
         """GET with retries for *transient* failures only.
 
         4xx responses are client errors (the Swagger documents 404 as "incorrect meter id or
-        permission denied") — retrying cannot help, so they fail immediately with a clear
+        permission denied"); retrying cannot help, so they fail immediately with a clear
         message. Transport errors and 5xx responses are retried with backoff.
         """
         last_exc: Exception | None = None

@@ -10,7 +10,7 @@ ever overwritten.
 
 Land protocol (atomic): payload bytes go to a `.tmp` name first, the envelope is written next,
 and the payload is renamed into place last. Invariant: if the payload path exists, the payload
-is complete and its envelope is present — a crash mid-write can never masquerade as landed.
+is complete and its envelope is present, so a crash mid-write can never masquerade as landed.
 """
 
 from __future__ import annotations

@@ -4,6 +4,17 @@ All notable changes to `secha-ingestion` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
+### Added (vendor #2: ProCem)
+- **ProCem file connector** (`connectors/procem.py`), the second vendor and the first FILE
+  source: one 7-Zip archive per LOCAL Helsinki day (Kampusareena platform dumps), extracted and
+  landed as tab-separated CSV. Supports an optional declared rtl_id subset (**line selection,
+  bytes verbatim**, the file-source analogue of an API field filter); the filter, selection
+  counts (incl. malformed lines), and source-file provenance go in the envelope. Plain `.csv`
+  day files are also accepted. Filtering streams from disk (never holds 3.8 GB in RAM).
+- CLI `secha-ingest procem --date … [--ids …]`; settings `SECHA_PROCEM_SOURCE_URL` /
+  `SECHA_PROCEM_IDS`; dependency `py7zr`.
+- **Zero changes to `core/`**: the `SourceConnector` protocol, sink, and runner absorbed a
+  file-based vendor unchanged (the ingestion-side decoupling claim, now demonstrated).
 ### Fixed
 - Envelope sidecars are now written as explicit UTF-8 bytes. Text-mode writes used the platform
   default encoding (cp1252 on Windows), which would mangle or crash on non-ASCII content such as
