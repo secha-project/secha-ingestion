@@ -110,3 +110,15 @@ def test_no_tmp_residue_after_land(landing: str) -> None:
     assert Path(result.payload_path).exists()
     directory = Path(result.payload_path).parent
     assert not list(directory.glob("*.tmp"))
+
+
+def test_parquet_lands_with_its_own_extension(landing: str) -> None:
+    """Parquet lands as .parquet, recognisable by name to people and extension-based tools."""
+    sink = RawSink(landing)
+    part = SourcePartition("kempower", "public_passenger_dataset", {"part": "00000-c000"})
+    payload = RawPayload(b"PAR1....PAR1", "application/vnd.apache.parquet")
+
+    result = sink.land(part, payload, connector_name="kempower", connector_version="0.1.0")
+
+    assert result.payload_path.endswith(".parquet")
+    assert Path(result.payload_path).read_bytes() == b"PAR1....PAR1"

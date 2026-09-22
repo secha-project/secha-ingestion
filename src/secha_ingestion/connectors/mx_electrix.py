@@ -1,8 +1,8 @@
 """MX Electrix connector: lands raw JSON from /meters/ and /measurements/.
 
 No transformation: the API already returns JSON; we persist the response bytes verbatim. Coefficient
-scaling, timestamp normalisation and field selection are the transform engine's job, not ingestion's
-. Only /meters/ + /measurements/ are implemented for the first vertical slice; /events/,
+scaling, timestamp normalisation and field selection are the transform engine's job, not
+ingestion's. Only /meters/ + /measurements/ are implemented for the first vertical slice; /events/,
 /events/{id}/ and /ssstamps/ are deliberately out of scope here.
 """
 
@@ -81,7 +81,7 @@ class MxElectrixConnector:
             if self._fields:
                 params["fields"] = self._fields
             yield partition, self._get(_MEASUREMENTS_PATH, params)
-        else:  # pragma: no cover - guard against an unknown partition source
+        else:  # pragma: no cover (guards against an unknown partition source)
             raise ValueError(f"Unknown source for {VENDOR}: {partition.source}")
 
     def close(self) -> None:

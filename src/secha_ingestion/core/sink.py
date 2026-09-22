@@ -30,6 +30,7 @@ _EXT_BY_CONTENT_TYPE = {
     "text/csv": "csv",
     "application/xml": "xml",
     "text/xml": "xml",
+    "application/vnd.apache.parquet": "parquet",
 }
 
 

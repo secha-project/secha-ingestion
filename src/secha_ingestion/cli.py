@@ -9,6 +9,7 @@ import typer
 
 from secha_ingestion import logging as ingest_logging
 from secha_ingestion.config import Settings
+from secha_ingestion.connectors.kempower import KempowerConnector
 from secha_ingestion.connectors.mx_electrix import MxElectrixConnector
 from secha_ingestion.connectors.procem import ProcemConnector
 from secha_ingestion.core.runner import run
@@ -113,6 +114,49 @@ def procem(
         f"Landed {len(results)} payload(s) to {settings.landing_root}: "
         f"{written} new, {len(results) - written} skipped."
     )
+
+
+@app.command("kempower")
+def kempower() -> None:
+    """Ingest the Kempower passenger charging export (Spark Parquet parts), verified per part."""
+    ingest_logging.configure()
+    settings = Settings()
+    try:
+        connector = KempowerConnector(source_url=settings.kempower_source_url)
+    except ValueError as exc:
+        typer.secho(
+            f"{exc}. Set SECHA_KEMPOWER_SOURCE_URL in .env (see .env.template)",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1) from exc
+
+    sink = RawSink(settings.landing_root)
+    try:
+        results = run(connector, sink, run_params={})
+    except (FileNotFoundError, ValueError) as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+
+    written = sum(1 for result in results if result.written)
+    typer.echo(
+        f"Landed {len(results)} payload(s) to {settings.landing_root}: "
+        f"{written} new, {len(results) - written} skipped."
+    )
+    if connector.rejected:
+        for rejection in connector.rejected:
+            typer.secho(
+                f"Not landed: {rejection.source_file}: {rejection.reason}",
+                fg=typer.colors.RED,
+                err=True,
+            )
+        typer.secho(
+            f"{len(connector.rejected)} part(s) failed verification. The rest landed; "
+            "re-run once a clean copy is in place and only the missing part(s) will land.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

@@ -8,7 +8,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Environment-driven settings. All keys are prefixed `SECHA_` (e.g. SECHA_LANDING_ROOT)."""
 
-    model_config = SettingsConfigDict(env_prefix="SECHA_", env_file=".env", extra="ignore")
+    # .env is UTF-8 (Finnish letters in paths). pydantic-settings defaults to that too; it is
+    # stated here so the behaviour does not rest on a library default
+    model_config = SettingsConfigDict(
+        env_prefix="SECHA_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     landing_root: str = "data/landing"
     request_timeout_s: int = 20
@@ -23,3 +27,6 @@ class Settings(BaseSettings):
     # --- ProCem file connector ---
     procem_source_url: str = ""  # directory of YYYY-MM-DD_procem.7z archives (path or fsspec URL)
     procem_ids: str | None = None  # rtl_id subset, e.g. "23501-23949"; None => whole day file
+
+    # --- Kempower file connector ---
+    kempower_source_url: str = ""  # directory of Spark part-*.parquet files (path or fsspec URL)

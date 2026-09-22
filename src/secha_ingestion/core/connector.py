@@ -12,8 +12,9 @@ from secha_ingestion.core.models import RawPayload, SourcePartition
 class SourceConnector(Protocol):
     """A vendor adapter: enumerate partitions, then fetch raw bytes. Performs no transformation.
 
-    NOTE: this interface is deliberately minimal and may be refactored once a second
-    connector (Kempower) exists. Do not over-generalise it on a single example.
+    Deliberately minimal. It has absorbed three very different connectors unchanged: an
+    authenticated API (MX Electrix), daily file archives (ProCem) and a Spark Parquet export
+    (Kempower). Generalise it only when a real source does not fit.
     """
 
     name: str
