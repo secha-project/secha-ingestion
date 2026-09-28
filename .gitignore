@@ -9,5 +9,7 @@ build/
 .coverage
 htmlcov/
 .env
-# raw landing zone is never committed (configurable via SECHA_LANDING_ROOT)
-data/landing/
+# raw landing zone is never committed (configurable via SECHA_LANDING_ROOT); nothing else under
+# data/ is either, whatever folder a run creates there, except the placeholder that keeps it
+data/*
+!data/.gitkeep
